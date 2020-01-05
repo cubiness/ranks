@@ -4,7 +4,10 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
@@ -50,7 +53,8 @@ public class Main extends JavaPlugin implements Listener {
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     if (label.equals("rank")) {
       // Item item = ranks.getItem("free", 101);
-      sender.sendMessage(ranks + "");
+      Item item = ranks.getItem("username", sender.getName());
+      sender.sendMessage(item + "");
       return true;
     }
     return false;
