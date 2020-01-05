@@ -1,0 +1,21 @@
+name: Ranks
+main: net.cubiness.ranks.Main
+version: 1.0-SNAPSHOT
+commands:
+  rank:
+    description: Allows you to see current rank
+    usage: /rank [playername]
+    permission: rank.read
+    permission-message: You don't have access to rank.read
+  rankset:
+    description: Allows you to set rank of any player
+    usage: /rankset <rank> [playername]
+    permission: rank.set
+    permission-message: You don't have access to rank.set
+permissions:
+  rank.read:
+    description: Allows player to see current rank
+    default: true
+  rank.set:
+    description: Allows you to set rank of any player
+    default: op
