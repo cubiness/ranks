@@ -1,7 +1,6 @@
 package net.cubiness.ranks;
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
@@ -13,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin implements Listener {
   private Table ranks;
+  private DynamoDB dbClient;
 
   @Override
   public void onEnable() {
@@ -21,12 +21,12 @@ public class Main extends JavaPlugin implements Listener {
     String profileName = (String) getConfig().get("aws.profile");
     String tableName = (String) getConfig().get("aws.table");
 
-    if (profileName == null) {
+    if (profileName == null || profileName.equals("PROFILE")) {
       getLogger().info("Please set aws.profile in config.yml to a valid config in ~/.aws/credentials");
       getServer().getPluginManager().disablePlugin(this);
       return;
     }
-    if (tableName == null) {
+    if (tableName == null || tableName.equals("TABLE")) {
       getLogger().info("Please set aws.table in config.yml to a valid table in aws");
       getServer().getPluginManager().disablePlugin(this);
       return;
@@ -35,13 +35,14 @@ public class Main extends JavaPlugin implements Listener {
     AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
             .withCredentials(new ProfileCredentialsProvider(profileName))
             .build();
-    DynamoDB dynamoDB = new DynamoDB(client);
-    ranks = dynamoDB.getTable(tableName);
+    dbClient = new DynamoDB(client);
+    ranks = dbClient.getTable(tableName);
     getLogger().info("Ranks plugin loaded!");
   }
 
   @Override
   public void onDisable() {
+    dbClient.shutdown();
     getLogger().info("Ranks plugin disabled");
   }
 
