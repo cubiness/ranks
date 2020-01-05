@@ -20,26 +20,29 @@ public class Main extends JavaPlugin implements Listener {
   @Override
   public void onEnable() {
     getServer().getPluginManager().registerEvents(this, this);
-    Bukkit.broadcastMessage("Ranks plugin loaded!");
     access_key = getConfig().getString("aws.key.access");
     secret_key = getConfig().getString("aws.key.secret");
     if (access_key == null || secret_key == null) {
-      saveDefaultConfig();
-      access_key = getConfig().getString("aws.key.access");
-      secret_key = getConfig().getString("aws.key.secret");
+      access_key = "ACCESSKEY";
+      secret_key = "SECRETKEY";
     }
-    BasicAWSCredentials awsCreds = new BasicAWSCredentials(access_key, secret_key);
+    if (access_key.equals("ACCESSKEY") || secret_key.equals("SECRETKEY")) {
+      getLogger().warning("Invalid config.yml! Please replace aws.key.access and aws.key.secret with your aws keys.");
+    } else {
+      BasicAWSCredentials awsCreds = new BasicAWSCredentials(access_key, secret_key);
 
-    AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
-            .withCredentials((new AWSStaticCredentialsProvider(awsCreds)))
-            .build();
-    DynamoDB dynamoDB = new DynamoDB(client);
-    ranks = dynamoDB.getTable("minecraft");
+      AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
+              .withCredentials((new AWSStaticCredentialsProvider(awsCreds)))
+              .build();
+      DynamoDB dynamoDB = new DynamoDB(client);
+      ranks = dynamoDB.getTable("minecraft");
+    }
+    getLogger().info("Ranks plugin loaded!");
   }
 
   @Override
   public void onDisable() {
-    Bukkit.broadcastMessage("Ranks plugin disabled");
+    getLogger().info("Ranks plugin disabled");
   }
 
   @Override
