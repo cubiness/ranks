@@ -1,14 +1,11 @@
 package net.cubiness.ranks;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Table;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
@@ -22,11 +19,9 @@ public class Main extends JavaPlugin implements Listener {
     getServer().getPluginManager().registerEvents(this, this);
 
     AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
-            .withRegion(Regions.US_WEST_2)
+            .withCredentials(new ProfileCredentialsProvider("ranks-table"))
             .build();
-    getLogger().info("Client: " + client);
     DynamoDB dynamoDB = new DynamoDB(client);
-    getLogger().info("Db: " + dynamoDB);
     ranks = dynamoDB.getTable("cubiness-ranks");
     getLogger().info("Ranks plugin loaded!");
   }
