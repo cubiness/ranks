@@ -1,5 +1,5 @@
 name: Ranks
-main: net.cubiness.ranks.Main
+main: net.cubiness.ranks.Ranks
 version: 1.0-SNAPSHOT
 commands:
   rank:

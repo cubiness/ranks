@@ -8,12 +8,13 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class Main extends JavaPlugin implements Listener {
+public class Ranks extends JavaPlugin implements Listener {
   private Table ranks;
   private DynamoDB dbClient;
 
@@ -54,7 +55,7 @@ public class Main extends JavaPlugin implements Listener {
     if (label.equals("rank")) {
       // Item item = ranks.getItem("free", 101);
       Item item = ranks.getItem("username", sender.getName());
-      sender.sendMessage(item + "");
+      sender.sendMessage(ChatColor.GOLD + "Rank: " + ChatColor.WHITE + item.get("rank"));
       return true;
     }
     return false;
