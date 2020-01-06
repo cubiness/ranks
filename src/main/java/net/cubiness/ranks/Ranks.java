@@ -11,6 +11,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -66,6 +67,7 @@ public class Ranks extends JavaPlugin implements Listener {
             .withCredentials(new ProfileCredentialsProvider(profileName))
             .build();
     updateAllRanks();
+    refreshPlayerNames();
     getLogger().info("Ranks plugin loaded!");
   }
 
@@ -103,8 +105,20 @@ public class Ranks extends JavaPlugin implements Listener {
     updateName(p);
   }
 
-  private void updateName(Player p) {
+  private void refreshPlayerNames() {
+    for (Player p : Bukkit.getOnlinePlayers()) {
+      updateName(p);
+    }
+  }
 
+  private void updateName(Player p) {
+    String name = getRank(p);
+    if (ranks.containsKey(name)) {
+      Rank data = ranks.get(name);
+      getLogger().info("Player " + p.getName() + " has rank " + name);
+    } else {
+      getLogger().warning("Player " + p.getName() + " has rank " + name + ", which is invalid!");
+    }
   }
 
   private void updateAllRanks() {
