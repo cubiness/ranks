@@ -5,9 +5,8 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
-import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
+import com.amazonaws.services.dynamodbv2.document.PutItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.spec.GetItemSpec;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -53,10 +52,21 @@ public class Ranks extends JavaPlugin implements Listener {
   @Override
   public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
     if (label.equals("rank")) {
-      // Item item = ranks.getItem("free", 101);
       Item item = ranks.getItem("username", sender.getName());
       sender.sendMessage(ChatColor.GOLD + "Rank: " + ChatColor.WHITE + item.get("rank"));
       return true;
+    } else if (label.equals("rankset")) {
+      if (args.length == 1) {
+        ranks.putItem(new Item()
+                .withPrimaryKey("username", sender.getName())
+                .withString("rank", args[0]));
+        return true;
+      } else if (args.length == 2) {
+        ranks.putItem(new Item()
+                .withPrimaryKey("username", args[1])
+                .withString("rank", args[0]));
+        return true;
+      }
     }
     return false;
   }
