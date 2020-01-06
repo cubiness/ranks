@@ -111,8 +111,20 @@ public class Ranks extends JavaPlugin implements Listener {
     ObjectListing list = s3Client.listObjects(bucketName, "ranks/");
     List<S3ObjectSummary> objects = list.getObjectSummaries();
     for (S3ObjectSummary os : objects) {
-      getLogger().info("Found rank in S3: " + os.getKey());
+      String key = os.getKey();
+      String[] sections = key.split("/");
+      if (sections.length == 1) {
+        continue;
+      }
+      String name = sections[1];
+      // for ranks/ key
+      if (name.equals("")) {
+        continue;
+      }
+      name = name.split("\\.")[0];
+      updateRank(name);
     }
+    getLogger().info("Loaded ranks: " + ranks);
   }
 
   private void updateRank(String name) {
