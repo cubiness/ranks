@@ -8,7 +8,9 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -19,7 +21,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.InputStream;
-import java.nio.ByteBufferAsFloatBufferL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +42,7 @@ public class Ranks extends JavaPlugin implements Listener {
     bucketName = (String) getConfig().get("aws.bucket");
 
     if (profileName == null || profileName.equals("PROFILE")) {
-      getLogger().info("Please set aws.profile in config.yml to a valid user in ~/.aws/credentials");
+      getLogger().severe("Please set aws.profile in config.yml to a valid user in ~/.aws/credentials");
       getServer().getPluginManager().disablePlugin(this);
       return;
     }
@@ -51,7 +52,7 @@ public class Ranks extends JavaPlugin implements Listener {
       return;
     }
     if (bucketName == null || bucketName.equals("BUCKET")) {
-      getLogger().info("Please set aws.bucket in config.yml to a valid bucket in aws");
+      getLogger().severe("Please set aws.bucket in config.yml to a valid bucket in aws");
       getServer().getPluginManager().disablePlugin(this);
       return;
     }
@@ -64,6 +65,7 @@ public class Ranks extends JavaPlugin implements Listener {
     s3Client = AmazonS3ClientBuilder.standard()
             .withCredentials(new ProfileCredentialsProvider(profileName))
             .build();
+    updateAllRanks();
     getLogger().info("Ranks plugin loaded!");
   }
 
@@ -103,6 +105,14 @@ public class Ranks extends JavaPlugin implements Listener {
 
   private void updateName(Player p) {
 
+  }
+
+  private void updateAllRanks() {
+    ObjectListing list = s3Client.listObjects(bucketName, "ranks/");
+    List<S3ObjectSummary> objects = list.getObjectSummaries();
+    for (S3ObjectSummary os : objects) {
+      getLogger().info("Found rank in S3: " + os.getKey());
+    }
   }
 
   private void updateRank(String name) {
