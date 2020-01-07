@@ -114,8 +114,16 @@ public class Ranks extends JavaPlugin implements Listener {
   private void updateName(Player p) {
     String name = getRank(p);
     if (ranks.containsKey(name)) {
-      Rank data = ranks.get(name);
+      Rank rank = ranks.get(name);
       getLogger().info("Player " + p.getName() + " has rank " + name);
+      String displayName = rank.getColor() +
+              "[" +
+              rank.getDisplayName() +
+              "] " +
+              p.getName() +
+              ChatColor.WHITE;
+      p.setDisplayName(displayName);
+      p.setPlayerListName(displayName);
     } else {
       getLogger().warning("Player " + p.getName() + " has rank " + name + ", which is invalid!");
     }
