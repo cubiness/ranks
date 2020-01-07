@@ -84,16 +84,22 @@ public class Ranks extends JavaPlugin implements Listener {
       sender.sendMessage(ChatColor.GOLD + "Rank: " + ChatColor.WHITE + item.get("rank"));
       return true;
     } else if (label.equals("rankset")) {
-      if (args.length == 1) {
-        playerRanks.putItem(new Item()
-                .withPrimaryKey("username", sender.getName())
-                .withString("rank", args[0]));
-        return true;
-      } else if (args.length == 2) {
-        playerRanks.putItem(new Item()
-                .withPrimaryKey("username", args[1])
-                .withString("rank", args[0]));
-        return true;
+      if (sender instanceof Player) {
+        if (args.length == 1) {
+          playerRanks.putItem(new Item()
+                  .withPrimaryKey("username", sender.getName())
+                  .withString("rank", args[0]));
+          updateName((Player) sender);
+          return true;
+        } else if (args.length == 2) {
+          playerRanks.putItem(new Item()
+                  .withPrimaryKey("username", args[1])
+                  .withString("rank", args[0]));
+          updateName(Bukkit.getPlayer(args[1]));
+          return true;
+        }
+      } else {
+        sender.sendMessage("Only players can run this command!");
       }
     }
     return false;
@@ -113,6 +119,12 @@ public class Ranks extends JavaPlugin implements Listener {
 
   private void updateName(Player p) {
     String name = getRank(p);
+    if (name == null) {
+      playerRanks.putItem(new Item()
+              .withPrimaryKey("username", p.getName())
+              .withString("rank", "citizen"));
+      name = "citizen";
+    }
     if (ranks.containsKey(name)) {
       Rank rank = ranks.get(name);
       getLogger().info("Player " + p.getName() + " has rank " + name);
@@ -177,6 +189,10 @@ public class Ranks extends JavaPlugin implements Listener {
 
   private String getRank(Player p) {
     Item item = playerRanks.getItem("username", p.getName());
-    return (String) item.get("rank");
+    if (item != null) {
+      return (String) item.get("rank");
+    } else {
+      return null;
+    }
   }
 }
