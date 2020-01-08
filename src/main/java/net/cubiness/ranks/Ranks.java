@@ -11,7 +11,6 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -20,7 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -132,6 +130,7 @@ public class Ranks extends JavaPlugin implements Listener {
       perms.put(p, perm);
     }
     PermissionAttachment perm = perms.get(p);
+    Rank rank = getRank(p);
   }
 
   private void refreshPlayerNames() {
@@ -141,13 +140,9 @@ public class Ranks extends JavaPlugin implements Listener {
   }
 
   private void updateName(Player p) {
-    String name = getRank(p);
-    if (name == null) {
-      name = "citizen";
-    }
-    if (ranks.containsKey(name)) {
-      Rank rank = ranks.get(name);
-      getLogger().info("Player " + p.getName() + " has rank " + name);
+    Rank rank = getRank(p);
+    if (rank != null) {
+      getLogger().info("Player " + p.getName() + " has rank " + rank.getName());
       String displayName = rank.getColor() +
               "[" +
               rank.getDisplayName() +
@@ -157,7 +152,7 @@ public class Ranks extends JavaPlugin implements Listener {
       p.setDisplayName(displayName);
       p.setPlayerListName(displayName);
     } else {
-      getLogger().warning("Player " + p.getName() + " has rank " + name + ", which is invalid!");
+      getLogger().warning("Player " + p.getName() + " has an invalid rank!");
     }
   }
 
@@ -207,12 +202,14 @@ public class Ranks extends JavaPlugin implements Listener {
     ranks.put(name, rank);
   }
 
-  private String getRank(Player p) {
+  private Rank getRank(Player p) {
     Item item = playerRanks.getItem("username", p.getName());
-    if (item != null) {
-      return (String) item.get("rank");
+    String name;
+    if (item == null) {
+      name = "citizen";
     } else {
-      return null;
+      name = (String) item.get("rank");
     }
+    return ranks.getOrDefault(name, null);
   }
 }
