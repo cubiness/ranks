@@ -11,6 +11,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -19,13 +20,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.permissions.Permission;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Ranks extends JavaPlugin implements Listener {
   private Table playerRanks;
@@ -33,6 +33,7 @@ public class Ranks extends JavaPlugin implements Listener {
   private AmazonS3 s3Client;
   private String bucketName;
   private HashMap<String, Rank> ranks = new HashMap<>();
+  private Map<Player, PermissionAttachment> perms = new HashMap<>();
 
   @Override
   public void onEnable() {
@@ -68,6 +69,7 @@ public class Ranks extends JavaPlugin implements Listener {
             .build();
     updateAllRanks();
     refreshPlayerNames();
+    refreshPlayerRanks();
     getLogger().info("Ranks plugin loaded!");
   }
 
@@ -115,6 +117,21 @@ public class Ranks extends JavaPlugin implements Listener {
   public void onPlayerJoin(PlayerJoinEvent e) {
     Player p = e.getPlayer();
     updateName(p);
+    updatePermissions(p);
+  }
+
+  private void refreshPlayerRanks() {
+    for (Player p : Bukkit.getOnlinePlayers()) {
+      updatePermissions(p);
+    }
+  }
+
+  private void updatePermissions(Player p) {
+    if (!perms.containsKey(p)) {
+      PermissionAttachment perm = p.addAttachment(this);
+      perms.put(p, perm);
+    }
+    PermissionAttachment perm = perms.get(p);
   }
 
   private void refreshPlayerNames() {
