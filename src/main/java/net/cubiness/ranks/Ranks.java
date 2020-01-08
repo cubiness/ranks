@@ -6,6 +6,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.xspec.S;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -131,6 +132,7 @@ public class Ranks extends JavaPlugin implements Listener {
     }
     PermissionAttachment perm = perms.get(p);
     Rank rank = getRank(p);
+    rank.getPermissions();
   }
 
   private void refreshPlayerNames() {
@@ -180,25 +182,40 @@ public class Ranks extends JavaPlugin implements Listener {
     S3Object obj = s3Client.getObject(bucketName, "ranks/" + name + ".cfg");
     InputStream stream = obj.getObjectContent();
     Scanner sc = new Scanner(stream);
-    HashMap<String, String> data = new HashMap<>();
-    int lineNum = 0;
+    StringBuilder sb = new StringBuilder();
     while (sc.hasNext()) {
       String line = sc.nextLine();
-      if (line.equals("")) {
-        lineNum++;
-        continue;
-      }
-      List<String> sections = Arrays.asList(line.split("="));
-      if (sections.size() != 2) {
-        getLogger().severe("Error on line " + lineNum + " of rank " + name);
-        return;
-      }
-      data.put(sections.get(0), sections.get(1));
+      sb.append(line);
+      sb.append("\n");
     }
+    List<String> sections = Arrays.asList(sb.toString().split(";"));
+    HashMap<String, String> data = new HashMap<>();
+    sections.forEach(section -> {
+      if (!section.trim().isEmpty()) {
+        List<String> keyVal = Arrays.asList(section.split("="));
+        if (keyVal.size() != 2) {
+          getLogger().severe("Error in config file for rank " + name);
+          getLogger().severe("Line: \"" + section + "\"");
+          return;
+        }
+        data.put(keyVal.get(0).trim(), keyVal.get(1).trim());
+      }
+    });
     Rank rank = new Rank();
     rank.setName(name);
     rank.setDisplayName(data.get("displayName"));
     rank.setColor(data.get("color"));
+    String rawPermissions = data.get("permissions");
+    Map<String, Boolean> perms = new HashMap<>();
+    Arrays.asList(rawPermissions.split(",")).forEach(perm -> {
+      perm = perm.trim();
+      if (perm.startsWith("-")) {
+        perms.put(perm.substring(1), false);
+      } else {
+        perms.put(perm, true);
+      }
+    });
+    rank.setPermissions(perms);
     ranks.put(name, rank);
   }
 
