@@ -6,7 +6,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.xspec.S;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -14,6 +13,7 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -25,6 +25,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class Ranks extends JavaPlugin implements Listener {
   private Table playerRanks;
@@ -132,7 +133,42 @@ public class Ranks extends JavaPlugin implements Listener {
     }
     PermissionAttachment perm = perms.get(p);
     Rank rank = getRank(p);
-    rank.getPermissions();
+    Map<String, Boolean> permMap = rank.getPermissions();
+    getLogger().info("Player perms: " + permMap);
+    Set<Pattern> trueMatchers = new HashSet<>();
+    Set<Pattern> falseMatchers = new HashSet<>();
+    permMap.forEach((str, bool) -> {
+      str = str.replaceAll("\\*", ".*");
+      Pattern reg = Pattern.compile(str);
+      if (bool) {
+        trueMatchers.add(reg);
+      } else {
+        falseMatchers.add(reg);
+      }
+    });
+    getAllPermissions().forEach(serverPerm -> {
+      trueMatchers.forEach(reg -> {
+        if (reg.matcher(serverPerm.getName()).matches()) {
+          getLogger().info("Setting true: " + serverPerm.getName());
+          perm.setPermission(serverPerm.getName(), true);
+        }
+      });
+      falseMatchers.forEach(reg -> {
+        if (reg.matcher(serverPerm.getName()).matches()) {
+          getLogger().info("Setting false: " + serverPerm.getName());
+          perm.setPermission(serverPerm.getName(), false);
+        }
+      });
+    });
+    p.recalculatePermissions();
+  }
+
+  private List<String> getAllPermissions() {
+    List<String> perms = new ArrayList<>();
+    Arrays.asList(Bukkit.getServer().getPluginManager().getPlugins()).forEach(plugin -> {
+
+    });
+    return perms;
   }
 
   private void refreshPlayerNames() {
