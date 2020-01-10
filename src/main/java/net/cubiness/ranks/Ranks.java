@@ -161,6 +161,7 @@ public class Ranks extends JavaPlugin implements Listener {
       });
     });
     p.recalculatePermissions();
+    p.updateCommands();
   }
 
   private List<String> getAllPermissions() {
