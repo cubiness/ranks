@@ -148,15 +148,15 @@ public class Ranks extends JavaPlugin implements Listener {
     });
     getAllPermissions().forEach(serverPerm -> {
       trueMatchers.forEach(reg -> {
-        if (reg.matcher(serverPerm.getName()).matches()) {
-          getLogger().info("Setting true: " + serverPerm.getName());
-          perm.setPermission(serverPerm.getName(), true);
+        if (reg.matcher(serverPerm).matches()) {
+          getLogger().info("Setting true: " + serverPerm);
+          perm.setPermission(serverPerm, true);
         }
       });
       falseMatchers.forEach(reg -> {
-        if (reg.matcher(serverPerm.getName()).matches()) {
-          getLogger().info("Setting false: " + serverPerm.getName());
-          perm.setPermission(serverPerm.getName(), false);
+        if (reg.matcher(serverPerm).matches()) {
+          getLogger().info("Setting false: " + serverPerm);
+          perm.setPermission(serverPerm, false);
         }
       });
     });
@@ -166,7 +166,10 @@ public class Ranks extends JavaPlugin implements Listener {
   private List<String> getAllPermissions() {
     List<String> perms = new ArrayList<>();
     Arrays.asList(Bukkit.getServer().getPluginManager().getPlugins()).forEach(plugin -> {
-
+      plugin.getDescription().getPermissions().forEach(perm -> {
+        getLogger().info("Found perm: " + perm.getName());
+        perms.add(perm.getName());
+      });
     });
     return perms;
   }
