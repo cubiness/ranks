@@ -43,6 +43,7 @@ public class Ranks extends JavaPlugin implements Listener {
   private String bucketName;
   private HashMap<String, Rank> ranks = new HashMap<>();
   private Map<Player, PermissionAttachment> perms = new HashMap<>();
+  private List<String> permissions = new ArrayList<>();
 
   @Override
   public void onEnable() {
@@ -125,10 +126,42 @@ public class Ranks extends JavaPlugin implements Listener {
   }
 
   @EventHandler
+  public void onPlayerLeave(PlayerQuitEvent e) {
+    Player p = e.getPlayer();
+    if (perms.containsKey(p)) {
+      perms.remove(p);
+    }
+    if (Bukkit.getOnlinePlayers().size() == 0) {
+      perms.clear();
+    }
+  }
+
+  @EventHandler
   public void onPlayerJoin(PlayerJoinEvent e) {
     Player p = e.getPlayer();
     updateName(p);
     updatePermissions(p);
+  }
+
+  private void updatePermissionsList() {
+    InputStream in = getClass().getResourceAsStream("/permissions.txt");
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+    Scanner sc = new Scanner(reader);
+    permissions.clear();
+    while (sc.hasNext()) {
+      permissions.add(sc.nextLine());
+    }
+    permissions.addAll(getAllPermissions());
+  }
+
+  private List<String> getAllPermissions() {
+    List<String> perms = new ArrayList<>();
+    Arrays.asList(Bukkit.getServer().getPluginManager().getPlugins()).forEach(plugin -> {
+      plugin.getDescription().getPermissions().forEach(perm -> {
+        perms.add(perm.getName());
+      });
+    });
+    return perms;
   }
 
   private void refreshPlayerRanks() {
@@ -145,7 +178,6 @@ public class Ranks extends JavaPlugin implements Listener {
     PermissionAttachment perm = perms.get(p);
     Rank rank = getRank(p);
     Map<String, Boolean> permMap = rank.getPermissions();
-    getLogger().info("Player perms: " + permMap);
     Set<Pattern> trueMatchers = new HashSet<>();
     Set<Pattern> falseMatchers = new HashSet<>();
     permMap.forEach((str, bool) -> {
@@ -157,32 +189,19 @@ public class Ranks extends JavaPlugin implements Listener {
         falseMatchers.add(reg);
       }
     });
-    getAllPermissions().forEach(serverPerm -> {
+    permissions.forEach(serverPerm -> {
       trueMatchers.forEach(reg -> {
         if (reg.matcher(serverPerm).matches()) {
-          getLogger().info("Setting true: " + serverPerm);
           perm.setPermission(serverPerm, true);
         }
       });
       falseMatchers.forEach(reg -> {
         if (reg.matcher(serverPerm).matches()) {
-          getLogger().info("Setting false: " + serverPerm);
           perm.setPermission(serverPerm, false);
         }
       });
     });
     p.recalculatePermissions();
-  }
-
-  private List<String> getAllPermissions() {
-    List<String> perms = new ArrayList<>();
-    Arrays.asList(Bukkit.getServer().getPluginManager().getPlugins()).forEach(plugin -> {
-      plugin.getDescription().getPermissions().forEach(perm -> {
-        getLogger().info("Found perm: " + perm.getName());
-        perms.add(perm.getName());
-      });
-    });
-    return perms;
   }
 
   private void refreshPlayerNames() {
