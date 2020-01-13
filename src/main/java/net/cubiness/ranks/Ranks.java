@@ -11,23 +11,32 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.InputStream;
-import java.util.*;
-import java.util.regex.Pattern;
-
 public class Ranks extends JavaPlugin implements Listener {
+
   private Table playerRanks;
   private DynamoDB dbClient;
   private AmazonS3 s3Client;
@@ -44,7 +53,8 @@ public class Ranks extends JavaPlugin implements Listener {
     bucketName = (String) getConfig().get("aws.bucket");
 
     if (profileName == null || profileName.equals("PROFILE")) {
-      getLogger().severe("Please set aws.profile in config.yml to a valid user in ~/.aws/credentials");
+      getLogger()
+          .severe("Please set aws.profile in config.yml to a valid user in ~/.aws/credentials");
       getServer().getPluginManager().disablePlugin(this);
       return;
     }
@@ -60,13 +70,14 @@ public class Ranks extends JavaPlugin implements Listener {
     }
 
     AmazonDynamoDB dynamodb = AmazonDynamoDBClientBuilder.standard()
-            .withCredentials(new ProfileCredentialsProvider(profileName))
-            .build();
+        .withCredentials(new ProfileCredentialsProvider(profileName))
+        .build();
     dbClient = new DynamoDB(dynamodb);
     playerRanks = dbClient.getTable(tableName);
     s3Client = AmazonS3ClientBuilder.standard()
-            .withCredentials(new ProfileCredentialsProvider(profileName))
-            .build();
+        .withCredentials(new ProfileCredentialsProvider(profileName))
+        .build();
+    updatePermissionsList();
     updateAllRanks();
     refreshPlayerNames();
     refreshPlayerRanks();
@@ -88,13 +99,13 @@ public class Ranks extends JavaPlugin implements Listener {
       if (sender instanceof Player) {
         if (args.length == 1) {
           playerRanks.putItem(new Item()
-                  .withPrimaryKey("username", sender.getName())
-                  .withString("rank", args[0]));
+              .withPrimaryKey("username", sender.getName())
+              .withString("rank", args[0]));
           updateName((Player) sender);
         } else if (args.length == 2) {
           playerRanks.putItem(new Item()
-                  .withPrimaryKey("username", args[1])
-                  .withString("rank", args[0]));
+              .withPrimaryKey("username", args[1])
+              .withString("rank", args[0]));
           updateName(Bukkit.getPlayer(args[1]));
         }
       } else {
@@ -185,11 +196,11 @@ public class Ranks extends JavaPlugin implements Listener {
     if (rank != null) {
       getLogger().info("Player " + p.getName() + " has rank " + rank.getName());
       String displayName = rank.getColor() +
-              "[" +
-              rank.getDisplayName() +
-              "] " +
-              p.getName() +
-              ChatColor.WHITE;
+          "[" +
+          rank.getDisplayName() +
+          "] " +
+          p.getName() +
+          ChatColor.WHITE;
       p.setDisplayName(displayName);
       p.setPlayerListName(displayName);
     } else {
