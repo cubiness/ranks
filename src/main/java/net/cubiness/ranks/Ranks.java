@@ -128,9 +128,7 @@ public class Ranks extends JavaPlugin implements Listener {
   @EventHandler
   public void onPlayerLeave(PlayerQuitEvent e) {
     Player p = e.getPlayer();
-    if (perms.containsKey(p)) {
-      perms.remove(p);
-    }
+    perms.remove(p);
     if (Bukkit.getOnlinePlayers().size() == 0) {
       perms.clear();
     }
@@ -181,12 +179,15 @@ public class Ranks extends JavaPlugin implements Listener {
     Set<Pattern> trueMatchers = new HashSet<>();
     Set<Pattern> falseMatchers = new HashSet<>();
     permMap.forEach((str, bool) -> {
-      str = str.replaceAll("\\*", ".*");
-      Pattern reg = Pattern.compile(str);
+      String regStr = str.replaceAll("\\*", ".*");
+      regStr = regStr.replaceAll("\\.", "\\.");
+      Pattern reg = Pattern.compile(regStr);
       if (bool) {
         trueMatchers.add(reg);
+        perm.setPermission(str, true);
       } else {
         falseMatchers.add(reg);
+        perm.setPermission(str, false);
       }
     });
     permissions.forEach(serverPerm -> {
@@ -202,6 +203,7 @@ public class Ranks extends JavaPlugin implements Listener {
       });
     });
     p.recalculatePermissions();
+    p.updateCommands();
   }
 
   private void refreshPlayerNames() {
