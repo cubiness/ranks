@@ -1,6 +1,5 @@
 .idea
 
-out
-target
+build
 
-dependency-reduced-pom.xml
+.gradle

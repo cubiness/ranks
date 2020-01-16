@@ -11,29 +11,39 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.InputStream;
-import java.util.*;
-import java.util.regex.Pattern;
-
 public class Ranks extends JavaPlugin implements Listener {
+
   private Table playerRanks;
   private DynamoDB dbClient;
   private AmazonS3 s3Client;
   private String bucketName;
   private HashMap<String, Rank> ranks = new HashMap<>();
   private Map<Player, PermissionAttachment> perms = new HashMap<>();
+  private List<String> permissions = new ArrayList<>();
 
   @Override
   public void onEnable() {
@@ -44,7 +54,8 @@ public class Ranks extends JavaPlugin implements Listener {
     bucketName = (String) getConfig().get("aws.bucket");
 
     if (profileName == null || profileName.equals("PROFILE")) {
-      getLogger().severe("Please set aws.profile in config.yml to a valid user in ~/.aws/credentials");
+      getLogger()
+          .severe("Please set aws.profile in config.yml to a valid user in ~/.aws/credentials");
       getServer().getPluginManager().disablePlugin(this);
       return;
     }
@@ -60,13 +71,14 @@ public class Ranks extends JavaPlugin implements Listener {
     }
 
     AmazonDynamoDB dynamodb = AmazonDynamoDBClientBuilder.standard()
-            .withCredentials(new ProfileCredentialsProvider(profileName))
-            .build();
+        .withCredentials(new ProfileCredentialsProvider(profileName))
+        .build();
     dbClient = new DynamoDB(dynamodb);
     playerRanks = dbClient.getTable(tableName);
     s3Client = AmazonS3ClientBuilder.standard()
-            .withCredentials(new ProfileCredentialsProvider(profileName))
-            .build();
+        .withCredentials(new ProfileCredentialsProvider(profileName))
+        .build();
+    updatePermissionsList();
     updateAllRanks();
     refreshPlayerNames();
     refreshPlayerRanks();
@@ -88,13 +100,13 @@ public class Ranks extends JavaPlugin implements Listener {
       if (sender instanceof Player) {
         if (args.length == 1) {
           playerRanks.putItem(new Item()
-                  .withPrimaryKey("username", sender.getName())
-                  .withString("rank", args[0]));
+              .withPrimaryKey("username", sender.getName())
+              .withString("rank", args[0]));
           updateName((Player) sender);
         } else if (args.length == 2) {
           playerRanks.putItem(new Item()
-                  .withPrimaryKey("username", args[1])
-                  .withString("rank", args[0]));
+              .withPrimaryKey("username", args[1])
+              .withString("rank", args[0]));
           updateName(Bukkit.getPlayer(args[1]));
         }
       } else {
@@ -114,10 +126,40 @@ public class Ranks extends JavaPlugin implements Listener {
   }
 
   @EventHandler
+  public void onPlayerLeave(PlayerQuitEvent e) {
+    Player p = e.getPlayer();
+    perms.remove(p);
+    if (Bukkit.getOnlinePlayers().size() == 0) {
+      perms.clear();
+    }
+  }
+
+  @EventHandler
   public void onPlayerJoin(PlayerJoinEvent e) {
     Player p = e.getPlayer();
     updateName(p);
     updatePermissions(p);
+  }
+
+  private void updatePermissionsList() {
+    InputStream in = getClass().getResourceAsStream("/permissions.txt");
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+    Scanner sc = new Scanner(reader);
+    permissions.clear();
+    while (sc.hasNext()) {
+      permissions.add(sc.nextLine());
+    }
+    permissions.addAll(getAllPermissions());
+  }
+
+  private List<String> getAllPermissions() {
+    List<String> perms = new ArrayList<>();
+    Arrays.asList(Bukkit.getServer().getPluginManager().getPlugins()).forEach(plugin -> {
+      plugin.getDescription().getPermissions().forEach(perm -> {
+        perms.add(perm.getName());
+      });
+    });
+    return perms;
   }
 
   private void refreshPlayerRanks() {
@@ -134,45 +176,34 @@ public class Ranks extends JavaPlugin implements Listener {
     PermissionAttachment perm = perms.get(p);
     Rank rank = getRank(p);
     Map<String, Boolean> permMap = rank.getPermissions();
-    getLogger().info("Player perms: " + permMap);
     Set<Pattern> trueMatchers = new HashSet<>();
     Set<Pattern> falseMatchers = new HashSet<>();
     permMap.forEach((str, bool) -> {
-      str = str.replaceAll("\\*", ".*");
-      Pattern reg = Pattern.compile(str);
+      String regStr = str.replaceAll("\\*", ".*");
+      regStr = regStr.replaceAll("\\.", "\\.");
+      Pattern reg = Pattern.compile(regStr);
       if (bool) {
         trueMatchers.add(reg);
+        perm.setPermission(str, true);
       } else {
         falseMatchers.add(reg);
+        perm.setPermission(str, false);
       }
     });
-    getAllPermissions().forEach(serverPerm -> {
+    permissions.forEach(serverPerm -> {
       trueMatchers.forEach(reg -> {
         if (reg.matcher(serverPerm).matches()) {
-          getLogger().info("Setting true: " + serverPerm);
           perm.setPermission(serverPerm, true);
         }
       });
       falseMatchers.forEach(reg -> {
         if (reg.matcher(serverPerm).matches()) {
-          getLogger().info("Setting false: " + serverPerm);
           perm.setPermission(serverPerm, false);
         }
       });
     });
     p.recalculatePermissions();
     p.updateCommands();
-  }
-
-  private List<String> getAllPermissions() {
-    List<String> perms = new ArrayList<>();
-    Arrays.asList(Bukkit.getServer().getPluginManager().getPlugins()).forEach(plugin -> {
-      plugin.getDescription().getPermissions().forEach(perm -> {
-        getLogger().info("Found perm: " + perm.getName());
-        perms.add(perm.getName());
-      });
-    });
-    return perms;
   }
 
   private void refreshPlayerNames() {
@@ -186,11 +217,11 @@ public class Ranks extends JavaPlugin implements Listener {
     if (rank != null) {
       getLogger().info("Player " + p.getName() + " has rank " + rank.getName());
       String displayName = rank.getColor() +
-              "[" +
-              rank.getDisplayName() +
-              "] " +
-              p.getName() +
-              ChatColor.WHITE;
+          "[" +
+          rank.getDisplayName() +
+          "] " +
+          p.getName() +
+          ChatColor.WHITE;
       p.setDisplayName(displayName);
       p.setPlayerListName(displayName);
     } else {
